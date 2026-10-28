@@ -1,37 +1,41 @@
-import numpy as np
+import random
 
 
 class Perceptron:
-    def __init__(self, lr=0.1, epochs=100):
-        self.lr, self.epochs = lr, epochs
+    def __init__(self, n_inputs, learning_rate=0.1):
+        # poids et biais aléatoires au départ
+        self.weights = [random.uniform(-1, 1) for _ in range(n_inputs)]
+        self.bias = random.uniform(-1, 1)
+        self.eta = learning_rate  # taux d'apprentissage
 
-    def fit(self, X, y):
-        self.w = np.zeros(X.shape[1])
-        self.b = 0.0
-        for epoch in range(self.epochs):
-            erreurs = 0
-            for xi, yi in zip(X, y):
-                erreur = yi - self.predict(xi)  # -1, 0 ou +1
-                if erreur != 0:
-                    self.w += self.lr * erreur * xi
-                    self.b += self.lr * erreur
-                    erreurs += 1
-            if erreurs == 0:  # convergence
-                break
-        return self
+    def step(self, weighted_sum):
+        return 1 if weighted_sum > 0 else 0
 
-    def predict(self, X):
-        return np.where(X @ self.w + self.b >= 0, 1, 0)
+    def predict(self, x_input):
+        weighted_sum = self.bias
+        for x, w in zip(x_input, self.weights):
+            weighted_sum += x * w
+        return self.step(weighted_sum)
+
+    def train(self, X, y, epochs=10):
+        for _ in range(epochs):  # on répète sur tous les exemples
+            for x_input, target in zip(X, y):
+                error = target - self.predict(x_input)  # y - ŷ
+
+                # mise à jour des poids et du biais
+                for i in range(len(self.weights)):
+                    self.weights[i] += self.eta * error * x_input[i]
+                self.bias += self.eta * error
 
 
-# Données factices : (note maths, note info) -> admis (1) / refusé (0)
-rng = np.random.default_rng(0)
-X = rng.uniform(0, 20, (100, 2))
-y = (X.sum(axis=1) >= 20).astype(int)
+# Test sur des données aléatoires
+random.seed(0)
 
-X_norm = X / 20  # notes ramenées dans [0, 1]
-model = Perceptron(lr=0.1)
-model.fit(X_norm, y)
+X = [[random.random(), random.random()] for _ in range(100)]
+y = [1 if x1 + x2 > 1 else 0 for x1, x2 in X]  # bonne réponse
 
-print(model.predict(np.array([[14, 11], [7, 9.5]]) / 20))
-print("Exactitude :", np.mean(model.predict(X_norm) == y))
+p = Perceptron(n_inputs=2)
+p.train(X, y, epochs=20)
+
+correct = sum(p.predict(x) == t for x, t in zip(X, y))
+print("Précision :", correct / len(X))
