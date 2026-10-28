@@ -17,3 +17,4 @@ Thumbs.db
 
 # Variables d environnement
 .env
+.agents
