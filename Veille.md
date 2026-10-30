@@ -95,6 +95,8 @@ Il s'inspire de manière simplifiée du neurone biologique : des signaux arriven
 
 ## 2. Quelle est sa fonction mathématique et son usage ? Définissez les termes de l'équation.
 
+En entrée, le perceptron reçoit un vecteur de caractéristiques, aussi appelées features : $x = (x_1, x_2, \ldots, x_n)$. Pour classer des fleurs, ces valeurs peuvent être la longueur et la largeur du pétale. La cible $y$ ne fait pas partie des entrées du modèle : elle sert pendant l'entraînement à vérifier la prédiction. En sortie, le modèle renvoie une classe binaire, ici 0 ou 1. Certaines conventions utilisent plutôt -1 et 1.
+
 On commence par calculer un score, puis on applique une fonction d'activation à seuil : [11]
 
 $$
@@ -120,6 +122,10 @@ $$
 | $f$ | Fonction seuil qui transforme le score en classe |
 | $\hat{y}$ | Classe prédite, ici 0 ou 1 |
 
+À échelle comparable des entrées, un poids grand en valeur absolue rend le score plus sensible aux variations de la caractéristique correspondante. Un poids proche de zéro réduit son influence. Quand une caractéristique augmente, un poids positif fait monter le score vers la classe 1, tandis qu'un poids négatif le fait descendre vers la classe 0. L'influence dépend donc aussi des valeurs et de l'échelle des entrées.
+
+Le biais décale le score indépendamment des entrées. Sans biais, le score vaut zéro lorsque toutes les entrées sont nulles : la frontière doit donc passer par l'origine. Le biais permet de déplacer cette frontière. À poids fixés, augmenter le biais facilite la prédiction de la classe 1.
+
 On peut aussi écrire la condition sous la forme $\sum_i w_i x_i \geq \theta$, avec un seuil $\theta = -b$. Les deux écritures sont équivalentes. La sortie est une décision, pas une probabilité. [11, 13]
 
 Le perceptron sert à séparer deux classes par une frontière définie par $\sum_i w_i x_i + b = 0$. Avec deux entrées, cette frontière est une droite ; avec davantage d'entrées, c'est un hyperplan. Il peut représenter les fonctions logiques ET et OU, mais pas XOR avec les entrées d'origine, car les classes de XOR ne sont pas séparables par une seule droite. [14]
@@ -143,6 +149,12 @@ Le paramètre $\eta > 0$ est le taux d'apprentissage : il règle l'amplitude des
 - Si la prédiction est correcte, $e = 0$ : rien ne change.
 - Si le modèle prédit 0 au lieu de 1, $e = 1$ : on ajoute $\eta x_i$ à chaque poids et $\eta$ au biais.
 - S'il prédit 1 au lieu de 0, $e = -1$ : on soustrait ces mêmes quantités.
+
+Multiplier par $x_i$ adapte la correction à l'entrée concernée. Si $x_i = 0$, son poids ne change pas. Plus sa valeur absolue est grande, plus la correction est importante. Le signe compte aussi : ajouter $\eta x_i$ diminue le poids si $x_i$ est négatif. Tous les poids n'augmentent donc pas forcément après une prédiction 0 au lieu de 1.
+
+Sur le même exemple, la variation du score après la correction vaut $\Delta z = \eta e(\sum_i x_i^2 + 1)$. Elle est positive si le modèle a prédit 0 au lieu de 1, et négative dans le cas inverse. La correction pousse ainsi le score dans le sens attendu, sans forcément suffire à corriger l'erreur en une seule mise à jour.
+
+On peut choisir un taux comme 0,01 ou 0,1. Pour le perceptron classique initialisé à zéro, changer ce taux positif constant multiplie tous les paramètres par le même facteur, à ordre des exemples identique et en arithmétique exacte. Les décisions restent alors les mêmes : un taux plus petit ne signifie donc pas forcément un apprentissage plus lent.
 
 On initialise les paramètres, par exemple à zéro, puis on parcourt les exemples en appliquant cette règle. Un passage complet sur le jeu d'entraînement s'appelle une époque. On recommence jusqu'à une époque sans erreur ou jusqu'au nombre maximal d'époques fixé. [13]
 
@@ -171,13 +183,37 @@ Séparer l'entraînement du test permet de vérifier si le modèle classe aussi 
 
 Sa principale limite est sa frontière de décision linéaire. Un perceptron seul ne peut pas séparer des classes qui nécessitent une frontière plus complexe, comme XOR avec ses deux entrées d'origine. [14]
 
+Le XOR illustre cette limite :
+
+| $x_1$ | $x_2$ | Classe XOR |
+| --- | --- | --- |
+| 0 | 0 | 0 |
+| 0 | 1 | 1 |
+| 1 | 0 | 1 |
+| 1 | 1 | 0 |
+
+Les points de classe 1 occupent une diagonale du carré et ceux de classe 0 l'autre. Aucune droite ne sépare ces deux classes. Avec des passages répétés sur ces quatre exemples, le perceptron continue donc à faire des erreurs : il ne peut pas terminer une époque sans erreur. Un réseau à plusieurs couches avec des activations non linéaires peut représenter XOR et des frontières plus complexes.
+
 Si les classes se chevauchent ou si des étiquettes sont contradictoires, il ne peut pas obtenir une séparation parfaite. L'apprentissage peut alors continuer à corriger les paramètres sans converger, d'où l'intérêt de fixer un nombre maximal d'époques. [13]
 
 Dans sa forme binaire classique, la sortie se limite à deux classes et ne fournit pas de probabilité. Le modèle n'apprend pas non plus de représentations intermédiaires comme un réseau à plusieurs couches. Il reste donc adapté à des problèmes simples dont les caractéristiques permettent une séparation linéaire. [11, 14]
 
 ## 7. Développer un perceptron en Python orienté objet et le tester sur des données aléatoires.
 
-Cette partie pratique sera réalisée plus tard.
+La classe `Perceptron` est écrite dans `perceptron.py` et testée dans `perceptron.ipynb`.
+
+### Conception de la classe
+
+- `__init__(lr, n_epochs)` enregistre les deux hyperparamètres : le taux d'apprentissage et le nombre maximal d'époques. Les poids et le biais sont des paramètres appris, créés dans `fit`.
+- `fit(X, y)` initialise les poids à zéro, puis parcourt les exemples à chaque époque. Pour chaque exemple, elle applique la règle de correction $w \leftarrow w + \eta\,(y - \hat{y})\,x$ et $b \leftarrow b + \eta\,(y - \hat{y})$. Elle enregistre le nombre d'erreurs de chaque époque dans `errors_`. [15]
+- `predict(X)` calcule la somme pondérée $z = w \cdot x + b$ et renvoie 1 si $z \geq 0$, sinon 0.
+- `score(X, y)` renvoie l'exactitude, c'est-à-dire la part de prédictions correctes.
+
+### Tests
+
+Premier test : 100 points tirés au hasard dans le plan, de classe 1 lorsque $x_1 + x_2 > 0$. Une droite sépare les deux classes. Le nombre d'erreurs par époque est 14, 10, puis 0 à partir de la troisième époque, et l'exactitude atteint 1,0. Les poids appris sont proches l'un de l'autre (environ 0,37 et 0,40) avec un biais nul, ce qui retrouve la règle utilisée pour créer les données.
+
+Second test : le problème XOR, qui reprend la limite décrite à la question 6. Le nombre d'erreurs ne tombe jamais à 0 (entre 3 et 4 par époque) et l'exactitude reste à 0,5. Le perceptron corrige un point en en déréglant un autre, car aucune droite ne sépare les deux classes.
 
 ### Sources
 
