@@ -101,7 +101,7 @@ Les trois modèles sont à égalité : leurs écarts sont plus petits que les é
 
 ## Installation
 
-Utilisez un Python 3.12 installé normalement (python.org ou Anaconda). Sous Windows, évitez la version du Microsoft Store.
+Le projet utilise Python 3.12.
 
 ```bash
 python -m venv .venv
@@ -273,7 +273,7 @@ The three models are tied: the differences between them are smaller than their s
 
 ### Installation
 
-Use a regular Python 3.12 installation (python.org or Anaconda). On Windows, avoid the Microsoft Store version.
+The project uses Python 3.12.
 
 ```bash
 python -m venv .venv
