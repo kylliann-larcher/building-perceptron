@@ -60,8 +60,11 @@ Tout est dans [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
    - **Boruta** (forêt aléatoire) confirme 24 variables. Un filtre de corrélation à 0,90 en garde ensuite **15**, toujours interprétables.
    - **PCA** : **10 composantes** conservent 95,4 % de la variance.
 6. **Modélisation** : le perceptron est entraîné sur les 30 variables, sur la sélection Boruta et sur la PCA. Le nombre d'époques et le taux d'apprentissage sont choisis sur la validation, en priorité selon le **rappel**.
+7. **Validation croisée** : 5 plis stratifiés sur l'entraînement et la validation réunis (454 échantillons). La standardisation, Boruta et la PCA sont réappris dans chaque pli pour éviter les fuites. Le test n'est pas réutilisé.
 
 ## Résultats
+
+### Test
 
 Évaluation unique sur le jeu de test (115 échantillons, dont 43 malins). La classe positive est M.
 
@@ -73,6 +76,18 @@ Tout est dans [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
 | Référence : classe majoritaire | 0 | 62,6 % | 0 % | 0 % | 100 % | 0 | 43 / 43 |
 
 Le **rappel** (sensibilité) est la métrique principale : un faux négatif est un cancer annoncé comme bénin, l'erreur la plus grave dans ce contexte. La précision et la spécificité mesurent le coût des fausses alertes.
+
+### Validation croisée
+
+Moyenne ± écart-type sur 5 plis (169 cancers au total).
+
+| Modèle | Entrées | Exactitude | Précision | Rappel | Spécificité | F1 | Cancers manqués |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Perceptron, 30 variables | 30 | 94,3 ± 3,3 % | 92,5 ± 5,8 % | 92,3 ± 4,5 % | 95,4 ± 3,6 % | 92,3 ± 4,4 % | 13 / 169 |
+| Perceptron, Boruta | 11 à 14 | 94,3 ± 3,8 % | 90,6 ± 6,2 % | 94,7 ± 4,4 % | 94,0 ± 4,0 % | 92,5 ± 4,9 % | 9 / 169 |
+| Perceptron, PCA | 10 | 94,7 ± 3,3 % | 92,0 ± 4,6 % | 94,1 ± 5,5 % | 95,1 ± 2,9 % | 93,0 ± 4,5 % | 10 / 169 |
+
+Les trois modèles sont à égalité : leurs écarts sont plus petits que les écarts-types. Les scores sont aussi plus bas que sur le test, dont le découpage était favorable. Environ 94 % d'exactitude est une estimation plus réaliste.
 
 ## Outils utilisés
 
@@ -101,13 +116,13 @@ jupyter notebook
 
 ## Conclusion
 
-Un simple perceptron obtient de très bons résultats sur ce jeu de données : jusqu'à 98,3 % d'exactitude et 97,7 % de rappel, contre 0 % de rappel pour la référence. Les deux classes sont donc presque séparables par une frontière linéaire.
+Un simple perceptron obtient de très bons résultats sur ce jeu de données : environ 94 % d'exactitude et 92 à 95 % de rappel en validation croisée, et jusqu'à 98,3 % d'exactitude sur le test, contre 0 % de rappel pour la référence. Les deux classes sont donc presque séparables par une frontière linéaire.
 
 Ces résultats sont pourtant à nuancer :
 
 - **Chaque cancer manqué compte.** Même un seul faux négatif sur 43 reste une erreur grave en médecine.
-- **La réduction de dimension n'a pas amélioré le modèle.** Avec 10 composantes, la PCA garde une performance proche en divisant le nombre d'entrées par trois. Boruta, préféré sur la validation pour un seul cas d'écart, fait moins bien sur le test.
-- **Les jeux sont petits.** Avec 113 et 115 échantillons en validation et en test, un ou deux cas suffisent à changer le classement. Les écarts entre modèles ne sont pas significatifs.
+- **La réduction de dimension n'a pas amélioré le modèle, mais elle ne l'a pas dégradé non plus.** La PCA (10 composantes) et Boruta (11 à 15 variables) atteignent les mêmes performances que les 30 variables avec deux à trois fois moins d'entrées.
+- **Les jeux sont petits.** Un ou deux cas suffisent à changer le classement : Boruta est dernier sur le test, mais il manque le moins de cancers en validation croisée. Le score du test (98 %) était optimiste ; la validation croisée donne plutôt 94 %.
 - **Le perceptron a ses limites.** Il ne donne pas de probabilité, ne converge pas si les données ne sont pas parfaitement séparables, et dépend de l'ordre des exemples.
 
 Pistes d'amélioration, non implémentées :
@@ -115,7 +130,7 @@ Pistes d'amélioration, non implémentées :
 - une régression logistique, pour obtenir une probabilité et ajuster le seuil afin de favoriser le rappel ;
 - un SVM, linéaire ou à noyau, pour une frontière à marge maximale ou non linéaire ;
 - un perceptron multicouche (MLP), pour apprendre des relations non linéaires ;
-- une validation croisée stratifiée, pour mesurer la stabilité des résultats ;
+- une validation croisée imbriquée, pour choisir aussi les réglages à l'intérieur des plis et supprimer le léger optimisme de notre estimation ;
 - une pondération des classes, pour pénaliser davantage les faux négatifs ;
 - un mélange des exemples à chaque époque et un arrêt anticipé dans la classe `Perceptron`.
 
@@ -217,8 +232,11 @@ Everything is in [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
    - **Boruta** (random forest) confirms 24 variables. A correlation filter at 0.90 then keeps **15**, which remain interpretable.
    - **PCA**: **10 components** retain 95.4% of the variance.
 6. **Modelling**: the perceptron is trained on the 30 variables, on the Boruta selection and on the PCA components. The number of epochs and the learning rate are chosen on the validation set, with **recall** as the main criterion.
+7. **Cross-validation**: 5 stratified folds on the training and validation sets combined (454 samples). Standardisation, Boruta and PCA are refitted in each fold to avoid leakage. The test set is not reused.
 
 ### Results
+
+#### Test set
 
 Single evaluation on the test set (115 samples, including 43 malignant). The positive class is M.
 
@@ -230,6 +248,18 @@ Single evaluation on the test set (115 samples, including 43 malignant). The pos
 | Baseline: majority class | 0 | 62.6% | 0% | 0% | 100% | 0 | 43 / 43 |
 
 **Recall** (sensitivity) is the main metric: a false negative is a cancer reported as benign, the most serious error in this context. Precision and specificity measure the cost of false alarms.
+
+#### Cross-validation
+
+Mean ± standard deviation over 5 folds (169 cancers in total).
+
+| Model | Inputs | Accuracy | Precision | Recall | Specificity | F1 | Missed cancers |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Perceptron, 30 variables | 30 | 94.3 ± 3.3% | 92.5 ± 5.8% | 92.3 ± 4.5% | 95.4 ± 3.6% | 92.3 ± 4.4% | 13 / 169 |
+| Perceptron, Boruta | 11 to 14 | 94.3 ± 3.8% | 90.6 ± 6.2% | 94.7 ± 4.4% | 94.0 ± 4.0% | 92.5 ± 4.9% | 9 / 169 |
+| Perceptron, PCA | 10 | 94.7 ± 3.3% | 92.0 ± 4.6% | 94.1 ± 5.5% | 95.1 ± 2.9% | 93.0 ± 4.5% | 10 / 169 |
+
+The three models are tied: the differences between them are smaller than their standard deviations. The scores are also lower than on the test set, whose split was favourable. About 94% accuracy is a more realistic estimate.
 
 ### Tools
 
@@ -258,13 +288,13 @@ jupyter notebook
 
 ### Conclusion
 
-A simple perceptron performs very well on this dataset: up to 98.3% accuracy and 97.7% recall, compared with 0% recall for the baseline. The two classes are therefore almost linearly separable.
+A simple perceptron performs very well on this dataset: about 94% accuracy and 92 to 95% recall in cross-validation, and up to 98.3% accuracy on the test set, compared with 0% recall for the baseline. The two classes are therefore almost linearly separable.
 
 These results still need to be put in perspective:
 
 - **Every missed cancer matters.** Even one false negative out of 43 is a serious error in medicine.
-- **Dimensionality reduction did not improve the model.** With 10 components, PCA keeps similar performance with three times fewer inputs. Boruta, preferred on the validation set by a single case, does worse on the test set.
-- **The datasets are small.** With 113 and 115 samples for validation and test, one or two cases are enough to change the ranking. The differences between models are not significant.
+- **Dimensionality reduction did not improve the model, but it did not degrade it either.** PCA (10 components) and Boruta (11 to 15 variables) match the 30-variable model with two to three times fewer inputs.
+- **The datasets are small.** One or two cases are enough to change the ranking: Boruta comes last on the test set but misses the fewest cancers in cross-validation. The test score (98%) was optimistic; cross-validation suggests about 94%.
 - **The perceptron has limits.** It gives no probability, does not converge if the data are not perfectly separable, and depends on the order of the samples.
 
 Possible improvements, not implemented:
@@ -272,7 +302,7 @@ Possible improvements, not implemented:
 - logistic regression, to get a probability and tune the threshold in favour of recall;
 - an SVM, linear or kernel-based, for a maximum-margin or non-linear boundary;
 - a multilayer perceptron (MLP), to learn non-linear relationships;
-- stratified cross-validation, to measure how stable the results are;
+- nested cross-validation, to tune the settings inside the folds as well and remove the slight optimism of our estimate;
 - class weighting, to penalise false negatives more heavily;
 - shuffling the samples at each epoch and early stopping in the `Perceptron` class.
 
