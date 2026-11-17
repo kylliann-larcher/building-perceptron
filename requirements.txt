@@ -3,3 +3,6 @@ matplotlib
 pandas
 jupyter
 ipykernel
+scikit-learn
+seaborn
+boruta
