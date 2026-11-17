@@ -4,6 +4,8 @@ Construction d'un perceptron en Python orienté objet, puis application au diagn
 
 Projet réalisé en B3 à La Plateforme par Kylliann, Pierre et Yanis.
 
+**Langues :** Français · [English](#english-version)
+
 ## Contexte
 
 Le perceptron, proposé par Frank Rosenblatt en 1958, est le premier neurone artificiel. Il calcule une somme pondérée de ses entrées, ajoute un biais, puis applique une fonction seuil pour répondre 0 ou 1. C'est la brique de base des réseaux de neurones actuels.
@@ -150,3 +152,130 @@ Pistes d'amélioration, non implémentées :
 - Kursa, M. B. et Rudnicki, W. R. (2010). *Feature Selection with the Boruta Package.* Journal of Statistical Software, 36(11), 1-13.
 - [BorutaPy](https://github.com/scikit-learn-contrib/boruta_py)
 - Pedregosa, F. et al. (2011). *Scikit-learn: Machine Learning in Python.* Journal of Machine Learning Research, 12, 2825-2830.
+
+---
+
+## English version
+
+Building a perceptron in object-oriented Python, then applying it to breast cancer diagnosis with the Breast Cancer Wisconsin (Diagnostic) dataset.
+
+Project carried out in the third year (B3) at La Plateforme by Kylliann, Pierre and Yanis.
+
+### Context
+
+The perceptron, introduced by Frank Rosenblatt in 1958, is the first artificial neuron. It computes a weighted sum of its inputs, adds a bias, then applies a step function to output 0 or 1. It is the basic building block of today's neural networks.
+
+The project has three parts:
+
+1. **Research**: define and compare Machine Learning and Deep Learning, present three Deep Learning applications, then answer seven questions about the perceptron (definition, equation, learning rule, activation, training, limitations). See [Veille.md](Veille.md) (in French).
+2. **Implementation**: write a `Perceptron` class and test it on random data. See [perceptron.py](perceptron.py) and [perceptron.ipynb](perceptron.ipynb).
+3. **Application**: predict whether a tumour is benign or malignant from cell nucleus measurements, then assess how well the perceptron handles this problem. See [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
+
+The notebooks and code comments are written in French.
+
+### Repository structure
+
+```text
+building-perceptron/
+├── perceptron.py               # Perceptron class
+├── perceptron.ipynb            # Tests on linearly separable random data and on XOR
+├── analyse_exploratoire.ipynb  # Breast Cancer: cleaning, EDA, dimensionality reduction, modelling, conclusion
+├── Veille.md                   # Answers to the research questions
+├── data/raw/
+│   ├── bcw_data.csv            # Raw data
+│   └── bcw_description.txt     # Variable description
+└── requirements.txt
+```
+
+### The Perceptron class
+
+`Perceptron(lr=0.1, n_epochs=20)` is a binary classifier (classes 0 and 1):
+
+- `fit(X, y)` starts with zero weights and bias. For each sample, it applies the perceptron rule: `w ← w + lr × (y − ŷ) × x` and `b ← b + lr × (y − ŷ)`. The number of errors per epoch is stored in `errors_`.
+- `predict(X)` computes `z = X·w + b` and returns 1 if `z ≥ 0`, otherwise 0.
+- `score(X, y)` returns the accuracy.
+
+On random points that a straight line can separate, errors drop to 0 within a few epochs. On the XOR problem, they never reach 0 and accuracy stays at 0.5. This shows the perceptron's main limitation: it can only draw a linear boundary.
+
+### Data
+
+The Breast Cancer Wisconsin (Diagnostic) dataset contains **569 samples** from fine needle aspirate images: **357 benign (B)** and **212 malignant (M)**. Ten features are measured for each cell nucleus: radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry and fractal dimension. Each one is given in three forms (mean `_mean`, standard error `_se`, worst value `_worst`), for a total of **30 numerical variables**.
+
+### Approach and analysis
+
+Everything is in [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
+
+1. **Cleaning**: the empty column `Unnamed: 32` and the ID are removed. There are no missing values or duplicates. The target is encoded as `B = 0` and `M = 1`.
+2. **Split**: 60% training, 20% validation, 20% test, stratified (seed 42). All analysis and fitting use the training set only, so the evaluation stays unbiased.
+3. **Exploratory analysis**:
+   - Imbalanced classes: always predicting "benign" already gives about 63% accuracy, so accuracy alone is not enough.
+   - Size and concavity measurements are clearly higher for malignant tumours. Texture and fractal dimension separate the two classes less well.
+   - Outliers (IQR method) appear mostly in malignant cases. They are real measurements, so they are kept.
+   - Radius, perimeter and area are almost perfectly correlated (r > 0.95): much of the information is redundant.
+4. **Standardisation** with the training mean and standard deviation, because the perceptron is sensitive to feature scales.
+5. **Dimensionality reduction**, two methods compared:
+   - **Boruta** (random forest) confirms 24 variables. A correlation filter at 0.90 then keeps **15**, which remain interpretable.
+   - **PCA**: **10 components** retain 95.4% of the variance.
+6. **Modelling**: the perceptron is trained on the 30 variables, on the Boruta selection and on the PCA components. The number of epochs and the learning rate are chosen on the validation set, with **recall** as the main criterion.
+
+### Results
+
+Single evaluation on the test set (115 samples, including 43 malignant). The positive class is M.
+
+| Model | Inputs | Accuracy | Precision | Recall | Specificity | F1 | Missed cancers |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Perceptron, 30 variables | 30 | 98.3% | 97.7% | 97.7% | 98.6% | 0.977 | 1 / 43 |
+| Perceptron, Boruta | 15 | 96.5% | 97.6% | 93.0% | 98.6% | 0.952 | 3 / 43 |
+| Perceptron, PCA | 10 | 98.3% | 100% | 95.3% | 100% | 0.976 | 2 / 43 |
+| Baseline: majority class | 0 | 62.6% | 0% | 0% | 100% | 0 | 43 / 43 |
+
+**Recall** (sensitivity) is the main metric: a false negative is a cancer reported as benign, the most serious error in this context. Precision and specificity measure the cost of false alarms.
+
+### Tools
+
+- **Python 3.12**
+- **NumPy**: perceptron implementation and computations
+- **pandas**: data loading and manipulation
+- **Matplotlib** and **seaborn**: visualisations
+- **scikit-learn**: PCA, random forest, metrics
+- **BorutaPy**: feature selection
+- **Jupyter**: notebooks
+
+### Installation
+
+Use a regular Python 3.12 installation (python.org or Anaconda). On Windows, avoid the Microsoft Store version.
+
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+jupyter notebook
+```
+
+### Conclusion
+
+A simple perceptron performs very well on this dataset: up to 98.3% accuracy and 97.7% recall, compared with 0% recall for the baseline. The two classes are therefore almost linearly separable.
+
+These results still need to be put in perspective:
+
+- **Every missed cancer matters.** Even one false negative out of 43 is a serious error in medicine.
+- **Dimensionality reduction did not improve the model.** With 10 components, PCA keeps similar performance with three times fewer inputs. Boruta, preferred on the validation set by a single case, does worse on the test set.
+- **The datasets are small.** With 113 and 115 samples for validation and test, one or two cases are enough to change the ranking. The differences between models are not significant.
+- **The perceptron has limits.** It gives no probability, does not converge if the data are not perfectly separable, and depends on the order of the samples.
+
+Possible improvements, not implemented:
+
+- logistic regression, to get a probability and tune the threshold in favour of recall;
+- an SVM, linear or kernel-based, for a maximum-margin or non-linear boundary;
+- a multilayer perceptron (MLP), to learn non-linear relationships;
+- stratified cross-validation, to measure how stable the results are;
+- class weighting, to penalise false negatives more heavily;
+- shuffling the samples at each epoch and early stopping in the `Perceptron` class.
+
+### Bibliography
+
+See the [Bibliographie](#bibliographie) section above. The references are the same in both languages.
