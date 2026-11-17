@@ -8,11 +8,11 @@ Projet réalisé en B3 à La Plateforme par Kylliann, Pierre et Yanis.
 
 ## Contexte
 
-Le perceptron, proposé par Frank Rosenblatt en 1958, est le premier neurone artificiel. Il calcule une somme pondérée de ses entrées, ajoute un biais, puis applique une fonction seuil pour répondre 0 ou 1. C'est la brique de base des réseaux de neurones actuels.
+Le perceptron, proposé par Frank Rosenblatt en 1958, est le premier neurone artificiel capable d'apprendre ses poids à partir d'exemples. Il calcule une somme pondérée de ses entrées, ajoute un biais, puis applique une fonction seuil pour répondre 0 ou 1. C'est la brique de base des réseaux de neurones actuels.
 
 Le projet comporte trois parties :
 
-1. **Veille** : définir et comparer le Machine Learning et le Deep Learning, présenter trois applications du Deep Learning, puis répondre à sept questions sur le perceptron (définition, équation, règle d'apprentissage, activation, entraînement, limites). Voir [Veille.md](Veille.md).
+1. **Veille** : définir et comparer le Machine Learning et le Deep Learning, présenter trois applications du Deep Learning, puis répondre à sept questions sur le perceptron (définition, équation, règle d'apprentissage, activation, entraînement, limites, implémentation). Voir [Veille.md](Veille.md).
 2. **Implémentation** : écrire une classe `Perceptron` et la tester sur des données aléatoires. Voir [perceptron.py](perceptron.py) et [perceptron.ipynb](perceptron.ipynb).
 3. **Application** : prédire si une tumeur est bénigne ou maligne à partir de mesures de noyaux cellulaires, puis juger l'efficacité du perceptron sur ce problème. Voir [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
 
@@ -49,7 +49,7 @@ Le jeu Breast Cancer Wisconsin (Diagnostic) contient **569 échantillons** issus
 Tout est dans [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
 
 1. **Nettoyage** : suppression de la colonne vide `Unnamed: 32` et de l'identifiant. Il n'y a ni valeur manquante ni doublon. La cible est encodée en `B = 0` et `M = 1`.
-2. **Séparation** : 60 % entraînement, 20 % validation, 20 % test, de façon stratifiée (graine 42). Toutes les analyses et tous les ajustements se font sur l'entraînement seul, pour ne pas fausser l'évaluation.
+2. **Séparation** : 60 % entraînement, 20 % validation, 20 % test, de façon stratifiée (graine 42). L'exploration, la standardisation, Boruta et la PCA sont appris sur l'entraînement seul. La validation sert à choisir les réglages, et le test n'est utilisé qu'une fois, à la fin, pour ne pas fausser l'évaluation.
 3. **Analyse exploratoire** :
    - Classes déséquilibrées : prédire toujours « bénin » donne déjà environ 63 % d'exactitude. L'exactitude seule ne suffit donc pas.
    - Les mesures de taille et de concavité sont nettement plus élevées chez les tumeurs malignes. La texture et la dimension fractale séparent moins bien les deux classes.
@@ -59,7 +59,7 @@ Tout est dans [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
 5. **Réduction de dimension**, deux méthodes comparées :
    - **Boruta** (forêt aléatoire) confirme 24 variables. Un filtre de corrélation à 0,90 en garde ensuite **15**, toujours interprétables.
    - **PCA** : **10 composantes** conservent 95,4 % de la variance.
-6. **Modélisation** : le perceptron est entraîné sur les 30 variables, sur la sélection Boruta et sur la PCA. Le nombre d'époques et le taux d'apprentissage sont choisis sur la validation, en priorité selon le **rappel**.
+6. **Modélisation** : le perceptron est entraîné sur les 30 variables, sur la sélection Boruta et sur la PCA. Le nombre d'époques est choisi sur la validation, en priorité selon le **rappel**. Le taux d'apprentissage ne change pas les décisions : les poids partent de zéro, donc le modifier multiplie tous les poids et le biais par la même valeur.
 7. **Validation croisée** : 5 plis stratifiés sur l'entraînement et la validation réunis (454 échantillons). La standardisation, Boruta et la PCA sont réappris dans chaque pli pour éviter les fuites. Le test n'est pas réutilisé.
 
 ## Résultats
@@ -178,11 +178,11 @@ Project carried out in the third year (B3) at La Plateforme by Kylliann, Pierre 
 
 ### Context
 
-The perceptron, introduced by Frank Rosenblatt in 1958, is the first artificial neuron. It computes a weighted sum of its inputs, adds a bias, then applies a step function to output 0 or 1. It is the basic building block of today's neural networks.
+The perceptron, introduced by Frank Rosenblatt in 1958, is the first artificial neuron able to learn its weights from examples. It computes a weighted sum of its inputs, adds a bias, then applies a step function to output 0 or 1. It is the basic building block of today's neural networks.
 
 The project has three parts:
 
-1. **Research**: define and compare Machine Learning and Deep Learning, present three Deep Learning applications, then answer seven questions about the perceptron (definition, equation, learning rule, activation, training, limitations). See [Veille.md](Veille.md) (in French).
+1. **Research**: define and compare Machine Learning and Deep Learning, present three Deep Learning applications, then answer seven questions about the perceptron (definition, equation, learning rule, activation, training, limitations, implementation). See [Veille.md](Veille.md) (in French).
 2. **Implementation**: write a `Perceptron` class and test it on random data. See [perceptron.py](perceptron.py) and [perceptron.ipynb](perceptron.ipynb).
 3. **Application**: predict whether a tumour is benign or malignant from cell nucleus measurements, then assess how well the perceptron handles this problem. See [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
 
@@ -221,7 +221,7 @@ The Breast Cancer Wisconsin (Diagnostic) dataset contains **569 samples** from f
 Everything is in [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
 
 1. **Cleaning**: the empty column `Unnamed: 32` and the ID are removed. There are no missing values or duplicates. The target is encoded as `B = 0` and `M = 1`.
-2. **Split**: 60% training, 20% validation, 20% test, stratified (seed 42). All analysis and fitting use the training set only, so the evaluation stays unbiased.
+2. **Split**: 60% training, 20% validation, 20% test, stratified (seed 42). Exploration, standardisation, Boruta and PCA are fitted on the training set only. The validation set is used to choose the settings, and the test set is used only once, at the end, so the evaluation stays unbiased.
 3. **Exploratory analysis**:
    - Imbalanced classes: always predicting "benign" already gives about 63% accuracy, so accuracy alone is not enough.
    - Size and concavity measurements are clearly higher for malignant tumours. Texture and fractal dimension separate the two classes less well.
@@ -231,7 +231,7 @@ Everything is in [analyse_exploratoire.ipynb](analyse_exploratoire.ipynb).
 5. **Dimensionality reduction**, two methods compared:
    - **Boruta** (random forest) confirms 24 variables. A correlation filter at 0.90 then keeps **15**, which remain interpretable.
    - **PCA**: **10 components** retain 95.4% of the variance.
-6. **Modelling**: the perceptron is trained on the 30 variables, on the Boruta selection and on the PCA components. The number of epochs and the learning rate are chosen on the validation set, with **recall** as the main criterion.
+6. **Modelling**: the perceptron is trained on the 30 variables, on the Boruta selection and on the PCA components. The number of epochs is chosen on the validation set, with **recall** as the main criterion. The learning rate does not change the decisions: the weights start at zero, so changing it scales all weights and the bias by the same factor.
 7. **Cross-validation**: 5 stratified folds on the training and validation sets combined (454 samples). Standardisation, Boruta and PCA are refitted in each fold to avoid leakage. The test set is not reused.
 
 ### Results
